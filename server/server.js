@@ -107,4 +107,56 @@ app.post('/character', async (req, res) => {
   }
 });
 
+app.post('/location', async (req, res) => {
+  const { seed } = req.body || {};
+  const base =
+    'Generate a unique fantasy location in the format "NAME: <name>; DESCRIPTION: <description>".';
+  const prompt = seed ? `${base} Seed: ${seed}` : base;
+  try {
+    const j = await callAI(prompt);
+    const text = j[0]?.generated_text || '';
+    const match = text.match(/NAME:\s*(.*);\s*DESCRIPTION:\s*([^\n]+)/i);
+    if (match) {
+      return res.json({ name: match[1].trim(), description: match[2].trim() });
+    }
+    throw new Error('parse');
+  } catch {
+    const names = ['Crystal Lake', 'Thornwood', 'Iron Hills', 'Shadow Valley'];
+    const descs = [
+      'A serene lake shimmering with magical energy.',
+      'A dense forest full of twisted thorns.',
+      'Rolling hills rich with ore deposits.',
+      'A valley perpetually cloaked in darkness.',
+    ];
+    const i = Math.floor(Math.random() * names.length);
+    res.json({ name: names[i], description: descs[i] });
+  }
+});
+
+app.post('/item', async (req, res) => {
+  const { seed } = req.body || {};
+  const base =
+    'Generate a unique fantasy item in the format "NAME: <name>; DESCRIPTION: <description>".';
+  const prompt = seed ? `${base} Seed: ${seed}` : base;
+  try {
+    const j = await callAI(prompt);
+    const text = j[0]?.generated_text || '';
+    const match = text.match(/NAME:\s*(.*);\s*DESCRIPTION:\s*([^\n]+)/i);
+    if (match) {
+      return res.json({ name: match[1].trim(), description: match[2].trim() });
+    }
+    throw new Error('parse');
+  } catch {
+    const names = ['Ancient Sword', 'Mystic Amulet', 'Healing Herb', 'Golden Coin'];
+    const descs = [
+      'A rusty sword emanating a faint aura.',
+      'An amulet engraved with swirling runes.',
+      'A herb said to cure any wound.',
+      'A coin gleaming with ancient markings.',
+    ];
+    const i = Math.floor(Math.random() * names.length);
+    res.json({ name: names[i], description: descs[i] });
+  }
+});
+
 app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
