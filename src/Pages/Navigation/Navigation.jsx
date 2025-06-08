@@ -28,6 +28,9 @@ const Navigation = () => {
                   <Button component={Link} to="/Classes" variant="gradient" compact gradient={{ from: 'orange', to: 'red', deg: 85 }}>
                     Classes
                   </Button>
+                  <Button component={Link} to="/Perks" variant="gradient" compact gradient={{ from: 'red', to: 'orange', deg: 95 }}>
+                    Perks
+                  </Button>
                   <Button component={Link} to="/Game" variant="gradient" compact gradient={{ from: 'orange', to: 'red', deg: 90 }}>
                     Game
                   </Button>

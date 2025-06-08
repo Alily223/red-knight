@@ -1,0 +1,18 @@
+export default {
+  health: 100,
+  speed: 1,
+  stealth: 1,
+  strength: 1,
+  intelligence: 1,
+  music: 1,
+  level: 1,
+  xp: 0,
+  perkPoints: 0,
+  items: [],
+  skills: [],
+  abilities: [],
+  perks: [],
+  places: [],
+  people: [],
+  class: '',
+};
