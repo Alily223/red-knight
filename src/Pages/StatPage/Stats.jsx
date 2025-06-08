@@ -61,6 +61,12 @@ const Stats = () => {
           <List.Item key={idx}>{it}</List.Item>
         ))}
       </List>
+      <Title order={3} mt="sm">Visited Locations</Title>
+      <List size="sm" withPadding>
+        {stats.places.map((pl, idx) => (
+          <List.Item key={idx}>{pl}</List.Item>
+        ))}
+      </List>
       <Button mt="md" onClick={handleSave}>Save Stats</Button>
     </Paper>
   );
