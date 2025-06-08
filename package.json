@@ -26,6 +26,7 @@
     "@tiptap/starter-kit": "^2.0.0-beta.220",
     "dayjs": "^1.11.7",
     "embla-carousel-react": "^7.1.0",
+    "jwt-decode": "^3.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.9.0",
@@ -33,6 +34,7 @@
     "sass": "^1.59.3",
     "web-vitals": "^2.1.4"
   },
+  "proxy": "http://localhost:4000",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

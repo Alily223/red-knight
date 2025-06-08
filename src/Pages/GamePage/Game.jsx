@@ -82,7 +82,7 @@ const Game = () => {
       }
     } else if (cmd.startsWith('ai ')) {
       const prompt = cmd.slice(3);
-      fetch('https://api-inference.huggingface.co/models/gpt2', {
+      fetch('/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inputs: prompt })
