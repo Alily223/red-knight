@@ -185,6 +185,25 @@ app.post('/item', async (req, res) => {
   }
 });
 
+app.post('/resource', async (req, res) => {
+  const { seed } = req.body || {};
+  const base = 'Generate a brand new crafting resource for a fantasy game in the format "NAME: <name>".';
+  const prompt = seed ? `${base} Seed: ${seed}` : base;
+  try {
+    const j = await callAI(prompt);
+    const text = j[0]?.generated_text || '';
+    const match = text.match(/NAME:\s*([^\n;]+)/i);
+    if (match) {
+      return res.json({ name: match[1].trim() });
+    }
+    throw new Error('parse');
+  } catch {
+    const names = ['Mythril', 'Adamant', 'Soulstone', 'Starshard'];
+    const name = names[Math.floor(Math.random() * names.length)];
+    res.json({ name });
+  }
+});
+
 app.post('/perk', async (req, res) => {
   const { seed } = req.body || {};
   const base =

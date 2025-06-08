@@ -9,6 +9,20 @@ const directions = {
   west: { x: -1, y: 0 },
 };
 
+const baseResources = [
+  'wood',
+  'stone',
+  'iron',
+  'gold',
+  'diamond',
+  'ruby',
+  'emerald',
+  'silver',
+  'electronics',
+  'copper',
+  'gorgonite',
+];
+
 function generateLocation(x, y) {
   const adjectives = ['Misty', 'Ancient', 'Quiet', 'Lonely', 'Frozen', 'Green', 'Dark', 'Sunny'];
   const nouns = ['Forest', 'Desert', 'Field', 'Mountain', 'Lake', 'Valley', 'Cavern', 'Village'];
@@ -152,6 +166,9 @@ const Game = () => {
       if (enc && enc.type === 'enemy') {
         addLog(`You defeat the ${enc.name}!`);
         setEncounters({ ...encounters, [key]: null });
+        const gain = Math.floor(Math.random() * 5) + 1;
+        updateStats({ coins: stats.coins + gain });
+        addLog(`You loot ${gain} coins from the ${enc.name}.`);
       } else {
         addLog('There is nothing to fight here.');
       }
@@ -161,8 +178,69 @@ const Game = () => {
         .then((item) => {
           addLog(`You found ${item.name}! ${item.description}`);
           updateStats({ items: [...stats.items, item.name] });
+          const coins = Math.floor(Math.random() * 3);
+          if (coins > 0) {
+            updateStats({ coins: stats.coins + coins });
+            addLog(`You also found ${coins} coins.`);
+          }
         })
         .catch(() => addLog('You search but find nothing.'));
+    } else if (cmd === 'gather') {
+      const res = baseResources[Math.floor(Math.random() * baseResources.length)];
+      const rare = res === 'gorgonite';
+      const amt = rare ? (Math.random() < 0.05 ? 1 : 0) : Math.floor(Math.random() * 3) + 1;
+      if (amt > 0) {
+        const newRes = { ...stats.resources };
+        newRes[res] = (newRes[res] || 0) + amt;
+        updateStats({ resources: newRes });
+        addLog(`You gather ${amt} ${res}.`);
+      } else {
+        addLog('You search but find no useful materials.');
+      }
+    } else if (cmd === 'discover') {
+      fetch('/resource', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((d) => {
+          const name = d.name.toLowerCase();
+          addLog(`You discover a new resource: ${name}.`);
+          const newRes = { ...stats.resources };
+          if (!newRes.discovered[name]) newRes.discovered[name] = 0;
+          updateStats({ resources: newRes });
+        })
+        .catch(() => addLog('No new resources discovered.'));
+    } else if (cmd === 'use gorgonite') {
+      if (stats.resources.gorgonite > 0) {
+        fetch('/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: 'Create a unique ability name for a fantasy hero' }),
+        })
+          .then((r) => (r.ok ? r.json() : Promise.reject()))
+          .then((d) => {
+            const ability = d[0]?.generated_text?.split('\n')[0] || 'Mysterious Power';
+            const newRes = { ...stats.resources, gorgonite: stats.resources.gorgonite - 1 };
+            updateStats({ resources: newRes, abilities: [...stats.abilities, ability] });
+            addLog(`The Gorgonite grants you the ability: ${ability}.`);
+          })
+          .catch(() => {
+            const ability = `Mystic Power ${Date.now()}`;
+            const newRes = { ...stats.resources, gorgonite: stats.resources.gorgonite - 1 };
+            updateStats({ resources: newRes, abilities: [...stats.abilities, ability] });
+            addLog(`The Gorgonite grants you a mysterious power: ${ability}.`);
+          });
+      } else {
+        addLog('You have no Gorgonite.');
+      }
+    } else if (cmd.startsWith('spend ')) {
+      const amt = parseInt(cmd.slice(6), 10);
+      if (isNaN(amt) || amt <= 0) {
+        addLog('Invalid amount.');
+      } else if (stats.coins < amt) {
+        addLog('Not enough coins.');
+      } else {
+        updateStats({ coins: stats.coins - amt });
+        addLog(`You spend ${amt} coins.`);
+      }
     } else if (cmd.startsWith('ai ')) {
       const prompt = cmd.slice(3);
       fetch('/ai', {

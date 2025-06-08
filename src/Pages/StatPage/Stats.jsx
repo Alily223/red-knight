@@ -28,6 +28,7 @@ const Stats = () => {
     level: { label: 'Level', desc: 'Overall progression of your character.' },
     xp: { label: 'XP', desc: 'Experience earned through adventure.' },
     perkPoints: { label: 'Perk Points', desc: 'Points available to upgrade perks.' },
+    coins: { label: 'Coins', desc: 'Currency used to trade with merchants.' },
     class: { label: 'Class', desc: 'Current profession or specialization.' },
   };
 
@@ -54,6 +55,7 @@ const Stats = () => {
     'level',
     'xp',
     'perkPoints',
+    'coins',
     'class',
   ];
 
@@ -110,6 +112,17 @@ const Stats = () => {
       <List size="sm" withPadding>
         {stats.items.map((it, idx) => (
           <List.Item key={idx}>{it}</List.Item>
+        ))}
+      </List>
+      <Title order={3} mt="sm">Resources</Title>
+      <List size="sm" withPadding>
+        {Object.entries(stats.resources).map(([res, amt]) => (
+          res !== 'discovered' && (
+            <List.Item key={res}>{res}: {amt}</List.Item>
+          )
+        ))}
+        {Object.entries(stats.resources.discovered || {}).map(([res, amt]) => (
+          <List.Item key={res}>{res}: {amt}</List.Item>
         ))}
       </List>
       {stats.perks && stats.perks.length > 0 && (
