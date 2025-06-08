@@ -8,6 +8,7 @@ import Authentication from './Pages/Authentication/Authentication';
 import User from './Pages/UserPage/User.jsx';
 import Stats from './Pages/StatPage/Stats.jsx';
 import Game from './Pages/GamePage/Game.jsx';
+import Classes from './Pages/ClassPage/Classes.jsx';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/Authentication" element={<Authentication/>}/>
           <Route path="/User" element={<User/>}/>
           <Route path="/Stats" element={<Stats/>}/>
+          <Route path="/Classes" element={<Classes/>}/>
           <Route path="/Game" element={<Game/>}/>
         </Routes>
       </BrowserRouter>

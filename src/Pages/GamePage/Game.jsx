@@ -26,6 +26,7 @@ const defaultStats = {
   abilities: [],
   places: [],
   people: [],
+  class: '',
 };
 
 const Game = () => {
@@ -133,7 +134,7 @@ const Game = () => {
       const place = places[`${position.x},${position.y}`];
       addLog(`You look around. ${place.description}`);
     } else if (cmd === 'stats') {
-      addLog(`HP: ${stats.health} | Position: ${position.x}, ${position.y}`);
+      addLog(`HP: ${stats.health} | Class: ${stats.class || 'None'} | Position: ${position.x}, ${position.y}`);
     } else if (cmd === 'save') {
       localStorage.setItem('gameState', JSON.stringify({ position, log, places }));
       localStorage.setItem('playerStats', JSON.stringify(stats));
