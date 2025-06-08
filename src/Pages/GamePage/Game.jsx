@@ -23,6 +23,7 @@ const Game = () => {
   const [command, setCommand] = useState('');
   const [places, setPlaces] = useState({});
   const [stats] = useState({ hp: 100 });
+  const [encounters, setEncounters] = useState({});
 
   useEffect(() => {
     const saved = localStorage.getItem('gameState');
@@ -45,6 +46,20 @@ const Game = () => {
       setPlaces({ ...places });
     }
     addLog(places[key].description);
+    if (!encounters[key]) {
+      if (Math.random() < 0.3) {
+        const foes = ['goblin', 'orc', 'bandit', 'wolf'];
+        const foe = foes[Math.floor(Math.random() * foes.length)];
+        encounters[key] = { type: 'enemy', name: foe };
+        setEncounters({ ...encounters });
+        addLog(`A wild ${foe} appears! Type 'fight' to engage.`);
+      } else {
+        encounters[key] = null;
+        setEncounters({ ...encounters });
+      }
+    } else if (encounters[key] && encounters[key].type === 'enemy') {
+      addLog(`The ${encounters[key].name} is here.`);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [position]);
 
@@ -80,14 +95,23 @@ const Game = () => {
           addLog('Failed to load.');
         }
       }
+    } else if (cmd === 'fight') {
+      const key = `${position.x},${position.y}`;
+      const enc = encounters[key];
+      if (enc && enc.type === 'enemy') {
+        addLog(`You defeat the ${enc.name}!`);
+        setEncounters({ ...encounters, [key]: null });
+      } else {
+        addLog('There is nothing to fight here.');
+      }
     } else if (cmd.startsWith('ai ')) {
       const prompt = cmd.slice(3);
       fetch('/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputs: prompt })
+        body: JSON.stringify({ prompt })
       })
-        .then((r) => r.json())
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((d) => {
           const text = d[0]?.generated_text || '...';
           addLog(text);
