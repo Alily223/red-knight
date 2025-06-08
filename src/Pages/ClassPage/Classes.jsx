@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Paper, TextInput, Textarea, Button, Stack, Title, List, Text } from '@mantine/core';
-
-const defaultStats = {
-  health: 100,
-  level: 1,
-  xp: 0,
-  items: [],
-  skills: [],
-  abilities: [],
-  places: [],
-  people: [],
-  class: '',
-};
+import defaultStats from '../../defaultStats';
 
 const defaultClass = { name: '', description: '' };
 

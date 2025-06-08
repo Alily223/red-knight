@@ -185,4 +185,33 @@ app.post('/item', async (req, res) => {
   }
 });
 
+app.post('/perk', async (req, res) => {
+  const { seed } = req.body || {};
+  const base =
+    'Generate a RPG perk in the format "NAME: <name>; DESCRIPTION: <description>; STAT: <stat>; TYPE: <percentage|number>; VALUE: <value>".';
+  const prompt = seed ? `${base} Seed: ${seed}` : base;
+  try {
+    const j = await callAI(prompt);
+    const text = j[0]?.generated_text || '';
+    const match = text.match(/NAME:\s*(.*);\s*DESCRIPTION:\s*([^;]+);\s*STAT:\s*(.*?);\s*TYPE:\s*(percentage|number);\s*VALUE:\s*(\d+)/i);
+    if (match) {
+      return res.json({
+        name: match[1].trim(),
+        description: match[2].trim(),
+        stat: match[3].trim().toLowerCase(),
+        type: match[4].trim().toLowerCase(),
+        value: parseInt(match[5], 10)
+      });
+    }
+    throw new Error('parse');
+  } catch {
+    const perks = [
+      { name: 'Tough Skin', description: 'Increase health by 5', stat: 'health', type: 'number', value: 5 },
+      { name: 'Swift', description: 'Increase speed by 10%', stat: 'speed', type: 'percentage', value: 10 },
+      { name: 'Shadow Walker', description: 'Increase stealth by 1', stat: 'stealth', type: 'number', value: 1 }
+    ];
+    res.json(perks[Math.floor(Math.random() * perks.length)]);
+  }
+});
+
 app.listen(PORT, () => console.log(`Backend running on ${PORT}`));

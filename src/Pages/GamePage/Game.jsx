@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TextInput, Button, Stack, Paper, Text } from '@mantine/core';
+import defaultStats from '../../defaultStats';
 
 const directions = {
   north: { x: 0, y: 1 },
@@ -17,17 +18,6 @@ function generateLocation(x, y) {
   return { name, description };
 }
 
-const defaultStats = {
-  health: 100,
-  level: 1,
-  xp: 0,
-  items: [],
-  skills: [],
-  abilities: [],
-  places: [],
-  people: [],
-  class: '',
-};
 
 const Game = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -38,7 +28,7 @@ const Game = () => {
     const saved = localStorage.getItem('playerStats');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return { ...defaultStats, ...JSON.parse(saved) };
       } catch {
         /* ignore */
       }
@@ -62,7 +52,7 @@ const Game = () => {
     const savedStats = localStorage.getItem('playerStats');
     if (savedStats) {
       try {
-        setStats(JSON.parse(savedStats));
+        setStats({ ...defaultStats, ...JSON.parse(savedStats) });
       } catch {
         /* ignore */
       }
@@ -149,7 +139,7 @@ const Game = () => {
           if (data.places) setPlaces(data.places);
           const savedStats = localStorage.getItem('playerStats');
           if (savedStats) {
-            try { setStats(JSON.parse(savedStats)); } catch {}
+            try { setStats({ ...defaultStats, ...JSON.parse(savedStats) }); } catch {}
           }
           addLog('Game loaded.');
         } catch (e) {
