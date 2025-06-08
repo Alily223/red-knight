@@ -25,6 +25,20 @@ const Game = () => {
   const [stats] = useState({ hp: 100 });
 
   useEffect(() => {
+    const saved = localStorage.getItem('gameState');
+    if (saved) {
+      try {
+        const { position, log, places } = JSON.parse(saved);
+        if (position) setPosition(position);
+        if (log) setLog(log);
+        if (places) setPlaces(places);
+      } catch (e) {
+        /* empty */
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const key = `${position.x},${position.y}`;
     if (!places[key]) {
       places[key] = generateLocation(position.x, position.y);
@@ -50,6 +64,35 @@ const Game = () => {
       addLog(`You look around. ${place.description}`);
     } else if (cmd === 'stats') {
       addLog(`HP: ${stats.hp} | Position: ${position.x}, ${position.y}`);
+    } else if (cmd === 'save') {
+      localStorage.setItem('gameState', JSON.stringify({ position, log, places }));
+      addLog('Game saved.');
+    } else if (cmd === 'load') {
+      const saved = localStorage.getItem('gameState');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.position) setPosition(data.position);
+          if (data.log) setLog(data.log);
+          if (data.places) setPlaces(data.places);
+          addLog('Game loaded.');
+        } catch (e) {
+          addLog('Failed to load.');
+        }
+      }
+    } else if (cmd.startsWith('ai ')) {
+      const prompt = cmd.slice(3);
+      fetch('https://api-inference.huggingface.co/models/gpt2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: prompt })
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          const text = d[0]?.generated_text || '...';
+          addLog(text);
+        })
+        .catch(() => addLog('AI request failed.'));
     } else if (cmd) {
       addLog('Unknown command.');
     }
