@@ -43,6 +43,17 @@ const User = () => {
     }
   };
 
+  const handleGenerate = () => {
+    fetch('/character', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        if (d.name && d.appearance) {
+          setUser({ name: d.name, appearance: d.appearance });
+        }
+      })
+      .catch(() => {});
+  };
+
   return (
     <Paper p="md" m="md" shadow="xs">
       <Title order={2}>User Info</Title>
@@ -54,6 +65,7 @@ const User = () => {
           onChange={(e) => setUser({ ...user, appearance: e.currentTarget.value })}
         />
         <Button onClick={handleSave}>Save</Button>
+        <Button variant="outline" onClick={handleGenerate}>Generate with AI</Button>
       </Stack>
     </Paper>
   );
