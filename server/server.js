@@ -133,6 +133,32 @@ app.post('/location', async (req, res) => {
   }
 });
 
+app.post('/class', async (req, res) => {
+  const { seed } = req.body || {};
+  const base =
+    'Generate a fantasy RPG character class in the format "NAME: <name>; DESCRIPTION: <description>".';
+  const prompt = seed ? `${base} Seed: ${seed}` : base;
+  try {
+    const j = await callAI(prompt);
+    const text = j[0]?.generated_text || '';
+    const match = text.match(/NAME:\s*(.*);\s*DESCRIPTION:\s*([^\n]+)/i);
+    if (match) {
+      return res.json({ name: match[1].trim(), description: match[2].trim() });
+    }
+    throw new Error('parse');
+  } catch {
+    const names = ['Warrior', 'Mage', 'Rogue', 'Cleric'];
+    const descs = [
+      'A master of melee combat.',
+      'A wielder of arcane magic.',
+      'A stealthy trickster.',
+      'A holy healer.',
+    ];
+    const i = Math.floor(Math.random() * names.length);
+    res.json({ name: names[i], description: descs[i] });
+  }
+});
+
 app.post('/item', async (req, res) => {
   const { seed } = req.body || {};
   const base =

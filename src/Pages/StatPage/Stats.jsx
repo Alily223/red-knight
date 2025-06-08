@@ -10,6 +10,7 @@ const defaultStats = {
   abilities: [],
   places: [],
   people: [],
+  class: '',
 };
 
 const Stats = () => {
@@ -55,6 +56,7 @@ const Stats = () => {
       <Text>Health: {stats.health}</Text>
       <Text>Level: {stats.level}</Text>
       <Text>XP: {stats.xp}</Text>
+      <Text>Class: {stats.class || 'None'}</Text>
       <Title order={3} mt="sm">Items</Title>
       <List size="sm" withPadding>
         {stats.items.map((it, idx) => (
