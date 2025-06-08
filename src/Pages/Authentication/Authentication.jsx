@@ -1,11 +1,20 @@
 import React from 'react';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import jwtDecode from 'jwt-decode';
 
 const clientId = 'YOUR_GOOGLE_CLIENT_ID';
 
 const Authentication = () => {
   const handleSuccess = (credentialResponse) => {
-    localStorage.setItem('googleCredential', JSON.stringify(credentialResponse));
+    const data = jwtDecode(credentialResponse.credential);
+    const { sub: id, name, email, picture } = data;
+    const info = { id, name, email, picture };
+    localStorage.setItem('googleCredential', JSON.stringify(info));
+    fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(info),
+    }).catch(() => {});
   };
 
   return (

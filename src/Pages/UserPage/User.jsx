@@ -14,14 +14,33 @@ const User = () => {
     if (saved) {
       try {
         setUser(JSON.parse(saved));
-      } catch (e) {
-        /* empty */
+      } catch {
+        /* ignore */
       }
+    }
+    const cred = localStorage.getItem('googleCredential');
+    if (cred) {
+      const { id } = JSON.parse(cred);
+      fetch(`/save/${id}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.user) setUser(d.user);
+        })
+        .catch(() => {});
     }
   }, []);
 
   const handleSave = () => {
     localStorage.setItem('playerUser', JSON.stringify(user));
+    const cred = localStorage.getItem('googleCredential');
+    if (cred) {
+      const { id } = JSON.parse(cred);
+      fetch('/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, user }),
+      }).catch(() => {});
+    }
   };
 
   return (

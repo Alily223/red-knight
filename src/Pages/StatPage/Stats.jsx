@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Paper, Title, Text, List } from '@mantine/core';
+import { Paper, Title, Text, List, Button } from '@mantine/core';
 
 const defaultStats = {
   health: 100,
@@ -20,11 +20,34 @@ const Stats = () => {
     if (saved) {
       try {
         setStats(JSON.parse(saved));
-      } catch (e) {
-        /* empty */
+      } catch {
+        /* ignore */
       }
     }
+    const cred = localStorage.getItem('googleCredential');
+    if (cred) {
+      const { id } = JSON.parse(cred);
+      fetch(`/save/${id}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.stats) setStats(d.stats);
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  const handleSave = () => {
+    localStorage.setItem('playerStats', JSON.stringify(stats));
+    const cred = localStorage.getItem('googleCredential');
+    if (cred) {
+      const { id } = JSON.parse(cred);
+      fetch('/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, stats }),
+      }).catch(() => {});
+    }
+  };
 
   return (
     <Paper p="md" m="md" shadow="xs">
@@ -38,6 +61,7 @@ const Stats = () => {
           <List.Item key={idx}>{it}</List.Item>
         ))}
       </List>
+      <Button mt="md" onClick={handleSave}>Save Stats</Button>
     </Paper>
   );
 };
