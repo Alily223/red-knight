@@ -17,9 +17,15 @@ app.use(express.json());
 
 function loadData() {
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    return {
+      users: {},
+      saves: {},
+      games: {},
+      ...data,
+    };
   } catch {
-    return { users: {}, saves: {} };
+    return { users: {}, saves: {}, games: {} };
   }
 }
 
@@ -45,6 +51,21 @@ app.post('/save', (req, res) => {
   data.saves[id] = { user, stats };
   saveData(data);
   res.json({ ok: true });
+});
+
+app.post('/game/save', (req, res) => {
+  const { id, state } = req.body;
+  if (!id) return res.status(400).json({ error: 'id required' });
+  const data = loadData();
+  data.games[id] = state;
+  saveData(data);
+  res.json({ ok: true });
+});
+
+app.get('/game/load/:id', (req, res) => {
+  const { id } = req.params;
+  const data = loadData();
+  res.json(data.games[id] || {});
 });
 
 app.get('/save/:id', (req, res) => {

@@ -40,10 +40,19 @@ const Game = () => {
   const [command, setCommand] = useState('');
   const [places, setPlaces] = useState({});
   const [stats, setStats] = useState(() => {
-    const saved = localStorage.getItem('playerStats');
+    const saved = localStorage.getItem('gameSave');
     if (saved) {
       try {
-        return { ...defaultStats, ...JSON.parse(saved) };
+        const j = JSON.parse(saved);
+        if (j.stats) return { ...defaultStats, ...j.stats };
+      } catch {
+        /* ignore */
+      }
+    }
+    const savedStats = localStorage.getItem('playerStats');
+    if (savedStats) {
+      try {
+        return { ...defaultStats, ...JSON.parse(savedStats) };
       } catch {
         /* ignore */
       }
@@ -53,25 +62,7 @@ const Game = () => {
   const [encounters, setEncounters] = useState({});
 
   useEffect(() => {
-    const saved = localStorage.getItem('gameState');
-    if (saved) {
-      try {
-        const { position, log, places } = JSON.parse(saved);
-        if (position) setPosition(position);
-        if (log) setLog(log);
-        if (places) setPlaces(places);
-      } catch (e) {
-        /* empty */
-      }
-    }
-    const savedStats = localStorage.getItem('playerStats');
-    if (savedStats) {
-      try {
-        setStats({ ...defaultStats, ...JSON.parse(savedStats) });
-      } catch {
-        /* ignore */
-      }
-    }
+    loadGame();
   }, []);
 
   useEffect(() => {
@@ -138,6 +129,64 @@ const Game = () => {
     setLog((l) => [...l, entry]);
   }
 
+  function getState() {
+    return {
+      position,
+      log,
+      places,
+      stats,
+      encounters,
+      timestamp: Date.now(),
+    };
+  }
+
+  function saveGame() {
+    const state = getState();
+    localStorage.setItem('gameSave', JSON.stringify(state));
+    localStorage.setItem('playerStats', JSON.stringify(stats));
+    const cred = localStorage.getItem('googleCredential');
+    if (cred) {
+      const { id } = JSON.parse(cred);
+      fetch('/game/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, state })
+      }).catch(() => {});
+    }
+  }
+
+  async function loadGame() {
+    let data;
+    const cred = localStorage.getItem('googleCredential');
+    if (cred) {
+      const { id } = JSON.parse(cred);
+      try {
+        const r = await fetch(`/game/load/${id}`);
+        if (r.ok) data = await r.json();
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!data) {
+      const saved = localStorage.getItem('gameSave');
+      if (saved) {
+        try { data = JSON.parse(saved); } catch { data = null; }
+      }
+    }
+    if (data) {
+      if (data.position) setPosition(data.position);
+      if (data.log) setLog(data.log);
+      if (data.places) setPlaces(data.places);
+      if (data.stats) setStats({ ...defaultStats, ...data.stats });
+      if (data.encounters) setEncounters(data.encounters);
+    }
+  }
+
+  useEffect(() => {
+    const state = getState();
+    localStorage.setItem('gameSave', JSON.stringify(state));
+  }, [position, log, places, stats, encounters]);
+
   function updateStats(patch) {
     const newStats = { ...stats, ...patch };
     setStats(newStats);
@@ -157,26 +206,10 @@ const Game = () => {
     } else if (cmd === 'stats') {
       addLog(`HP: ${stats.health} | Class: ${stats.class || 'None'} | Position: ${position.x}, ${position.y}`);
     } else if (cmd === 'save') {
-      localStorage.setItem('gameState', JSON.stringify({ position, log, places }));
-      localStorage.setItem('playerStats', JSON.stringify(stats));
+      saveGame();
       addLog('Game saved.');
     } else if (cmd === 'load') {
-      const saved = localStorage.getItem('gameState');
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          if (data.position) setPosition(data.position);
-          if (data.log) setLog(data.log);
-          if (data.places) setPlaces(data.places);
-          const savedStats = localStorage.getItem('playerStats');
-          if (savedStats) {
-            try { setStats({ ...defaultStats, ...JSON.parse(savedStats) }); } catch {}
-          }
-          addLog('Game loaded.');
-        } catch (e) {
-          addLog('Failed to load.');
-        }
-      }
+      loadGame().then(() => addLog('Game loaded.')).catch(() => addLog('Failed to load.'));
     } else if (cmd === 'fight') {
       const key = `${position.x},${position.y}`;
       const enc = encounters[key];
