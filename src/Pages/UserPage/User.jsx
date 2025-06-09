@@ -10,19 +10,25 @@ const User = () => {
   const [user, setUser] = useState(defaultUser);
 
   useEffect(() => {
-    const saved = localStorage.getItem('playerUser');
+    const saved = localStorage.getItem('gameSave');
     if (saved) {
       try {
-        setUser(JSON.parse(saved));
+        const data = JSON.parse(saved);
+        if (data.user) setUser(data.user);
       } catch {
         /* ignore */
+      }
+    } else {
+      const legacy = localStorage.getItem('playerUser');
+      if (legacy) {
+        try { setUser(JSON.parse(legacy)); } catch {}
       }
     }
     const cred = localStorage.getItem('googleCredential');
     if (cred) {
       const { id } = JSON.parse(cred);
-      fetch(`/save/${id}`)
-        .then((r) => r.json())
+      fetch(`/game/load/${id}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((d) => {
           if (d.user) setUser(d.user);
         })
@@ -31,14 +37,22 @@ const User = () => {
   }, []);
 
   const handleSave = () => {
+    const saved = localStorage.getItem('gameSave');
+    let state = {};
+    if (saved) {
+      try { state = JSON.parse(saved); } catch { state = {}; }
+    }
+    state.user = user;
+    state.timestamp = Date.now();
+    localStorage.setItem('gameSave', JSON.stringify(state));
     localStorage.setItem('playerUser', JSON.stringify(user));
     const cred = localStorage.getItem('googleCredential');
     if (cred) {
       const { id } = JSON.parse(cred);
-      fetch('/save', {
+      fetch('/game/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, user }),
+        body: JSON.stringify({ id, state }),
       }).catch(() => {});
     }
   };

@@ -63,19 +63,25 @@ const Stats = () => {
   ];
 
   useEffect(() => {
-    const saved = localStorage.getItem('playerStats');
+    const saved = localStorage.getItem('gameSave');
     if (saved) {
       try {
-        setStats({ ...defaultStats, ...JSON.parse(saved) });
+        const data = JSON.parse(saved);
+        if (data.stats) setStats({ ...defaultStats, ...data.stats });
       } catch {
         /* ignore */
+      }
+    } else {
+      const legacy = localStorage.getItem('playerStats');
+      if (legacy) {
+        try { setStats({ ...defaultStats, ...JSON.parse(legacy) }); } catch {}
       }
     }
     const cred = localStorage.getItem('googleCredential');
     if (cred) {
       const { id } = JSON.parse(cred);
-      fetch(`/save/${id}`)
-        .then((r) => r.json())
+      fetch(`/game/load/${id}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((d) => {
           if (d.stats) setStats({ ...defaultStats, ...d.stats });
         })
@@ -84,14 +90,22 @@ const Stats = () => {
   }, []);
 
   const handleSave = () => {
+    const saved = localStorage.getItem('gameSave');
+    let state = {};
+    if (saved) {
+      try { state = JSON.parse(saved); } catch { state = {}; }
+    }
+    state.stats = stats;
+    state.timestamp = Date.now();
+    localStorage.setItem('gameSave', JSON.stringify(state));
     localStorage.setItem('playerStats', JSON.stringify(stats));
     const cred = localStorage.getItem('googleCredential');
     if (cred) {
       const { id } = JSON.parse(cred);
-      fetch('/save', {
+      fetch('/game/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, stats }),
+        body: JSON.stringify({ id, state }),
       }).catch(() => {});
     }
   };
