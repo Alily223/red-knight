@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Paper, Title, Text, List, Button, HoverCard } from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
+import { useNavigate } from 'react-router-dom';
 import defaultStats from '../../defaultStats';
 
 const Stats = () => {
   const [stats, setStats] = useState(defaultStats);
+  const navigate = useNavigate();
 
   const STAT_INFO = {
     health: { label: 'Health', desc: 'Amount of damage you can withstand.' },
@@ -93,6 +96,11 @@ const Stats = () => {
     }
   };
 
+  const handleUseAbility = (name) => {
+    localStorage.setItem('nextAbility', name);
+    navigate('/Game');
+  };
+
   return (
     <Paper p="md" m="md" shadow="xs">
       <Title order={2}>Player Stats</Title>
@@ -141,6 +149,27 @@ const Stats = () => {
           <List.Item key={idx}>{pl}</List.Item>
         ))}
       </List>
+      {stats.abilities && stats.abilities.length > 0 && (
+        <>
+          <Title order={3} mt="sm">Abilities</Title>
+          <Carousel slideSize="70%" height={160} align="start" slideGap="md" withControls>
+            {stats.abilities.map((ab, idx) => {
+              const ability = typeof ab === 'string' ? { name: ab, description: '' } : ab;
+              return (
+                <Carousel.Slide key={idx}>
+                  <Paper p="sm" shadow="xs">
+                    <Title order={4}>{ability.name}</Title>
+                    <Text size="sm">{ability.description}</Text>
+                    <Button mt="xs" size="xs" onClick={() => handleUseAbility(ability.name)}>
+                      Use Ability
+                    </Button>
+                  </Paper>
+                </Carousel.Slide>
+              );
+            })}
+          </Carousel>
+        </>
+      )}
       <Button mt="md" onClick={handleSave}>Save Stats</Button>
     </Paper>
   );
