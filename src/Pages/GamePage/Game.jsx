@@ -27,6 +27,8 @@ const baseResources = [
 ];
 
 const CARRY_PER_STRENGTH = 5;
+const MOUNT_SPEED_MULT = 2;
+const VEHICLE_SPEED_MULT = 3;
 
 function parseCommand(input) {
   const trimmed = input.trim();
@@ -39,7 +41,7 @@ function parseCommand(input) {
   if (directions[verb]) {
     return { type: 'move', dir: verb, args, arg };
   }
-  if ((verb === 'go' || verb === 'move' || verb === 'walk') && directions[args[0]]) {
+  if ((verb === 'go' || verb === 'move' || verb === 'walk' || verb === 'ride' || verb === 'drive') && directions[args[0]]) {
     return { type: 'move', dir: args[0], args: args.slice(1), arg: args.slice(1).join(' ') };
   }
 
@@ -338,9 +340,67 @@ const Game = () => {
       const dir = parsed.dir;
       if (directions[dir]) {
         const delta = directions[dir];
-        setPosition((p) => ({ x: p.x + delta.x, y: p.y + delta.y }));
+        const mult = stats.activeVehicle ? VEHICLE_SPEED_MULT : (stats.activeMount ? MOUNT_SPEED_MULT : 1);
+        setPosition((p) => ({ x: p.x + delta.x * mult, y: p.y + delta.y * mult }));
       } else {
         addLog('Unknown direction.');
+      }
+    } else if (parsed.type === 'mount') {
+      const name = parsed.arg.toLowerCase();
+      if (stats.mounts.includes(name)) {
+        updateStats({ activeMount: name, activeVehicle: '' });
+        addLog(`You mount the ${name}.`);
+      } else {
+        addLog('You do not have that mount.');
+      }
+    } else if (parsed.type === 'dismount') {
+      if (stats.activeMount) {
+        addLog(`You dismount the ${stats.activeMount}.`);
+        updateStats({ activeMount: '' });
+      } else {
+        addLog('You are not mounted.');
+      }
+    } else if (parsed.type === 'board') {
+      const name = parsed.arg.toLowerCase();
+      if (stats.vehicles.includes(name)) {
+        updateStats({ activeVehicle: name, activeMount: '' });
+        addLog(`You board the ${name}.`);
+      } else {
+        addLog('You do not have that vehicle.');
+      }
+    } else if (parsed.type === 'disembark') {
+      if (stats.activeVehicle) {
+        addLog(`You leave the ${stats.activeVehicle}.`);
+        updateStats({ activeVehicle: '' });
+      } else {
+        addLog('You are not in a vehicle.');
+      }
+    } else if (parsed.type === 'teleport') {
+      const [xStr, yStr] = parsed.args;
+      const x = parseInt(xStr, 10);
+      const y = parseInt(yStr, 10);
+      if (isNaN(x) || isNaN(y)) {
+        addLog('Usage: teleport <x> <y>');
+      } else if (stats.teleportScrolls > 0) {
+        updateStats({ teleportScrolls: stats.teleportScrolls - 1 });
+        setPosition({ x, y });
+        addLog(`You teleport to ${x}, ${y}.`);
+      } else {
+        addLog('You have no teleport scrolls.');
+      }
+    } else if (parsed.type === 'acquire') {
+      const item = parsed.arg.toLowerCase();
+      if (item === 'horse') {
+        if (!stats.mounts.includes('horse')) updateStats({ mounts: [...stats.mounts, 'horse'] });
+        addLog('You acquire a horse.');
+      } else if (item === 'cart') {
+        if (!stats.vehicles.includes('cart')) updateStats({ vehicles: [...stats.vehicles, 'cart'] });
+        addLog('You acquire a cart.');
+      } else if (item === 'teleport scroll') {
+        updateStats({ teleportScrolls: (stats.teleportScrolls || 0) + 1 });
+        addLog('You acquire a teleport scroll.');
+      } else {
+        addLog('Unknown acquisition.');
       }
     } else if (parsed.type === 'look') {
       const place = places[`${position.x},${position.y}`];
