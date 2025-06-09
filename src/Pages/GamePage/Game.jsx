@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TextInput, Button, Stack, Paper, Text, Flex } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import StatsCard from './StatsCard';
 import defaultStats from '../../defaultStats';
 
@@ -58,6 +59,7 @@ const Game = () => {
   const [places, setPlaces] = useState({});
   const inputRef = useRef(null);
   const logRef = useRef(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [stats, setStats] = useState(() => {
     const saved = localStorage.getItem('gameSave');
     if (saved) {
@@ -372,7 +374,7 @@ const Game = () => {
   }
 
   return (
-    <Flex align="flex-start" gap="md" p="md">
+    <Flex align="flex-start" gap="md" p="md" direction={isMobile ? 'column' : 'row'}>
       <Stack spacing="xs" style={{ flexGrow: 1 }}>
         <Paper shadow="xs" p="md" style={{ height: '300px', overflowY: 'auto' }} ref={logRef}>
           {log.map((entry, idx) => (
