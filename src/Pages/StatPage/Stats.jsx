@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Paper, Title, Text, List, Button, HoverCard } from '@mantine/core';
+import { Paper, Title, Text, List, Button, HoverCard, SimpleGrid } from '@mantine/core';
 import { Carousel } from '@mantine/carousel';
 import { useNavigate } from 'react-router-dom';
 import defaultStats from '../../defaultStats';
@@ -118,18 +118,20 @@ const Stats = () => {
   return (
     <Paper p="md" m="md" shadow="xs">
       <Title order={2}>Player Stats</Title>
-      {orderedStats.map((key) => (
-        <HoverCard key={key} width={260} shadow="md" withinPortal>
-          <HoverCard.Target>
-            <Text>
-              {STAT_INFO[key].label}: {stats[key] || (key === 'class' ? 'None' : 0)}
-            </Text>
-          </HoverCard.Target>
-          <HoverCard.Dropdown>
-            <Text size="sm">{STAT_INFO[key].desc}</Text>
-          </HoverCard.Dropdown>
-        </HoverCard>
-      ))}
+      <SimpleGrid cols={2} spacing="xs">
+        {orderedStats.map((key) => (
+          <HoverCard key={key} width={260} shadow="md" withinPortal>
+            <HoverCard.Target>
+              <Text>
+                {STAT_INFO[key].label}: {stats[key] || (key === 'class' ? 'None' : 0)}
+              </Text>
+            </HoverCard.Target>
+            <HoverCard.Dropdown>
+              <Text size="sm">{STAT_INFO[key].desc}</Text>
+            </HoverCard.Dropdown>
+          </HoverCard>
+        ))}
+      </SimpleGrid>
       <Title order={3} mt="sm">Items</Title>
       <List size="sm" withPadding>
         {stats.items.map((it, idx) => (

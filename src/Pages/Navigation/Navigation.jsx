@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const Navigation = () => {
   return (
-    <nav>
+    <nav style={{ position: 'sticky', top: 0, zIndex: 1000 }}>
       <div className="Navigation-wrapper">
         <Container fluid m={0} p={0} bg="rgba(0, 0, 0, .3)">
           <Grid className="Grid-Wrapper" justify="center" m={0} mw="100%" grow gutter="xs">
