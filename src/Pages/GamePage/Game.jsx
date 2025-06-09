@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TextInput, Button, Stack, Paper, Text, Flex } from '@mantine/core';
 import StatsCard from './StatsCard';
 import defaultStats from '../../defaultStats';
@@ -24,6 +24,23 @@ const baseResources = [
   'gorgonite',
 ];
 
+function parseCommand(input) {
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed) return null;
+  const parts = trimmed.split(/\s+/);
+  const verb = parts[0];
+  const arg = parts.slice(1).join(' ');
+
+  if (directions[verb]) {
+    return { type: 'move', dir: verb };
+  }
+  if ((verb === 'go' || verb === 'move' || verb === 'walk') && directions[arg]) {
+    return { type: 'move', dir: arg };
+  }
+
+  return { type: verb, arg };
+}
+
 function generateLocation(x, y) {
   const adjectives = ['Misty', 'Ancient', 'Quiet', 'Lonely', 'Frozen', 'Green', 'Dark', 'Sunny'];
   const nouns = ['Forest', 'Desert', 'Field', 'Mountain', 'Lake', 'Valley', 'Cavern', 'Village'];
@@ -39,6 +56,8 @@ const Game = () => {
   const [log, setLog] = useState([]);
   const [command, setCommand] = useState('');
   const [places, setPlaces] = useState({});
+  const inputRef = useRef(null);
+  const logRef = useRef(null);
   const [stats, setStats] = useState(() => {
     const saved = localStorage.getItem('gameSave');
     if (saved) {
@@ -60,6 +79,16 @@ const Game = () => {
     return defaultStats;
   });
   const [encounters, setEncounters] = useState({});
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [log]);
 
   useEffect(() => {
     loadGame();
@@ -194,23 +223,33 @@ const Game = () => {
   }
 
   function handleCommand() {
-    const cmd = command.trim().toLowerCase();
+    const parsed = parseCommand(command);
     setCommand('');
+    if (!parsed) {
+      addLog('Please enter a command.');
+      inputRef.current?.focus();
+      return;
+    }
 
-    if (directions[cmd]) {
-      const delta = directions[cmd];
-      setPosition((p) => ({ x: p.x + delta.x, y: p.y + delta.y }));
-    } else if (cmd === 'look') {
+    if (parsed.type === 'move') {
+      const dir = parsed.dir;
+      if (directions[dir]) {
+        const delta = directions[dir];
+        setPosition((p) => ({ x: p.x + delta.x, y: p.y + delta.y }));
+      } else {
+        addLog('Unknown direction.');
+      }
+    } else if (parsed.type === 'look') {
       const place = places[`${position.x},${position.y}`];
       addLog(`You look around. ${place.description}`);
-    } else if (cmd === 'stats') {
+    } else if (parsed.type === 'stats') {
       addLog(`HP: ${stats.health} | Class: ${stats.class || 'None'} | Position: ${position.x}, ${position.y}`);
-    } else if (cmd === 'save') {
+    } else if (parsed.type === 'save') {
       saveGame();
       addLog('Game saved.');
-    } else if (cmd === 'load') {
+    } else if (parsed.type === 'load') {
       loadGame().then(() => addLog('Game loaded.')).catch(() => addLog('Failed to load.'));
-    } else if (cmd === 'fight') {
+    } else if (parsed.type === 'fight') {
       const key = `${position.x},${position.y}`;
       const enc = encounters[key];
       if (enc && enc.type === 'enemy') {
@@ -222,7 +261,7 @@ const Game = () => {
       } else {
         addLog('There is nothing to fight here.');
       }
-    } else if (cmd === 'search') {
+    } else if (parsed.type === 'search') {
       fetch('/item', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((item) => {
@@ -235,7 +274,7 @@ const Game = () => {
           }
         })
         .catch(() => addLog('You search but find nothing.'));
-    } else if (cmd === 'gather') {
+    } else if (parsed.type === 'gather') {
       const res = baseResources[Math.floor(Math.random() * baseResources.length)];
       const rare = res === 'gorgonite';
       const amt = rare ? (Math.random() < 0.05 ? 1 : 0) : Math.floor(Math.random() * 3) + 1;
@@ -247,7 +286,7 @@ const Game = () => {
       } else {
         addLog('You search but find no useful materials.');
       }
-    } else if (cmd === 'discover') {
+    } else if (parsed.type === 'discover') {
       fetch('/resource', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((d) => {
@@ -258,7 +297,7 @@ const Game = () => {
           updateStats({ resources: newRes });
         })
         .catch(() => addLog('No new resources discovered.'));
-    } else if (cmd === 'use gorgonite') {
+    } else if (parsed.type === 'use' && parsed.arg === 'gorgonite') {
       if (stats.resources.gorgonite > 0) {
         fetch('/ai', {
           method: 'POST',
@@ -290,8 +329,8 @@ const Game = () => {
       } else {
         addLog('You have no Gorgonite.');
       }
-    } else if (cmd.startsWith('ability ')) {
-      const name = cmd.slice(8).trim();
+    } else if (parsed.type === 'ability') {
+      const name = parsed.arg;
       const ab = (stats.abilities || []).find((a) => {
         if (typeof a === 'string') return a.toLowerCase() === name;
         return a.name.toLowerCase() === name;
@@ -302,8 +341,8 @@ const Game = () => {
       } else {
         addLog('You do not possess that ability.');
       }
-    } else if (cmd.startsWith('spend ')) {
-      const amt = parseInt(cmd.slice(6), 10);
+    } else if (parsed.type === 'spend') {
+      const amt = parseInt(parsed.arg, 10);
       if (isNaN(amt) || amt <= 0) {
         addLog('Invalid amount.');
       } else if (stats.coins < amt) {
@@ -312,8 +351,8 @@ const Game = () => {
         updateStats({ coins: stats.coins - amt });
         addLog(`You spend ${amt} coins.`);
       }
-    } else if (cmd.startsWith('ai ')) {
-      const prompt = cmd.slice(3);
+    } else if (parsed.type === 'ai') {
+      const prompt = parsed.arg;
       fetch('/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -325,20 +364,23 @@ const Game = () => {
           addLog(text);
         })
         .catch(() => addLog('AI request failed.'));
-    } else if (cmd) {
+    } else if (parsed.type) {
       addLog('Unknown command.');
     }
+
+    inputRef.current?.focus();
   }
 
   return (
     <Flex align="flex-start" gap="md" p="md">
       <Stack spacing="xs" style={{ flexGrow: 1 }}>
-        <Paper shadow="xs" p="md" style={{ height: '300px', overflowY: 'auto' }}>
+        <Paper shadow="xs" p="md" style={{ height: '300px', overflowY: 'auto' }} ref={logRef}>
           {log.map((entry, idx) => (
             <Text key={idx}>{entry}</Text>
           ))}
         </Paper>
         <TextInput
+          ref={inputRef}
           placeholder="Enter command"
           value={command}
           onChange={(e) => setCommand(e.currentTarget.value)}
