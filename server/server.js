@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 4000;
 const DATA_FILE = path.join(__dirname, 'data.json');
+const aiCache = new Map();
 
 app.use(cors());
 app.use(express.json());
@@ -75,6 +76,9 @@ app.get('/save/:id', (req, res) => {
 });
 
 async function callAI(prompt) {
+  if (aiCache.has(prompt)) {
+    return aiCache.get(prompt);
+  }
   const hf = await fetch('https://api-inference.huggingface.co/models/gpt2', {
     method: 'POST',
     headers: {
@@ -86,7 +90,9 @@ async function callAI(prompt) {
   if (!hf.ok) {
     throw new Error('hf');
   }
-  return hf.json();
+  const json = await hf.json();
+  aiCache.set(prompt, json);
+  return json;
 }
 
 app.post('/ai', async (req, res) => {
