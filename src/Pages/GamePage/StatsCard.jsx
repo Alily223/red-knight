@@ -96,6 +96,22 @@ const StatsCard = ({ stats }) => (
         <List.Item key={res}>{res}: {amt}</List.Item>
       ))}
     </List>
+    {stats.reputation && (
+      <>
+        <Title order={4} mt="sm">Reputation</Title>
+        <List size="sm" withPadding>
+          {Object.entries(stats.reputation.factions || {}).map(([name, rep]) => (
+            <List.Item key={`f-${name}`}>Faction - {name}: {rep}</List.Item>
+          ))}
+          {Object.entries(stats.reputation.guilds || {}).map(([name, rep]) => (
+            <List.Item key={`g-${name}`}>Guild - {name}: {rep}</List.Item>
+          ))}
+          {Object.entries(stats.reputation.nations || {}).map(([name, rep]) => (
+            <List.Item key={`n-${name}`}>Nation - {name}: {rep}</List.Item>
+          ))}
+        </List>
+      </>
+    )}
 
     {stats.perks && stats.perks.length > 0 && (
       <>

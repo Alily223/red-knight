@@ -312,6 +312,15 @@ const Game = () => {
     if (patch.worldTime) {
       newStats.worldTime = { ...stats.worldTime, ...patch.worldTime };
     }
+    if (patch.reputation) {
+      newStats.reputation = {
+        ...stats.reputation,
+        ...patch.reputation,
+        factions: { ...(stats.reputation?.factions || {}), ...(patch.reputation.factions || {}) },
+        guilds: { ...(stats.reputation?.guilds || {}), ...(patch.reputation.guilds || {}) },
+        nations: { ...(stats.reputation?.nations || {}), ...(patch.reputation.nations || {}) },
+      };
+    }
     setStats(newStats);
     localStorage.setItem('playerStats', JSON.stringify(newStats));
   }
@@ -499,6 +508,45 @@ const Game = () => {
         addLog(`You use ${typeof ab === 'string' ? ab : ab.name}! ${desc}`);
       } else {
         addLog('You do not possess that ability.');
+      }
+    } else if (parsed.type === 'reputation' || parsed.type === 'rep') {
+      if (parsed.args.length >= 2) {
+        const [category, ...rest] = parsed.args;
+        const name = rest.join(' ');
+        const rep = stats.reputation?.[category]?.[name];
+        if (rep !== undefined) addLog(`${name} (${category}) reputation: ${rep}`);
+        else addLog('No reputation record.');
+      } else {
+        let has = false;
+        Object.entries(stats.reputation || {}).forEach(([cat, list]) => {
+          Object.entries(list || {}).forEach(([n, r]) => {
+            addLog(`${cat.slice(0, -1)} ${n}: ${r}`);
+            has = true;
+          });
+        });
+        if (!has) addLog('No reputation with any group.');
+      }
+    } else if (parsed.type === 'gainrep') {
+      const [category, name, amtStr] = parsed.args;
+      const amt = parseInt(amtStr, 10) || 1;
+      if (!category || !name) {
+        addLog('Usage: gainrep <category> <name> <amount>');
+      } else {
+        const cat = stats.reputation[category] || {};
+        const newVal = (cat[name] || 0) + amt;
+        updateStats({ reputation: { [category]: { [name]: newVal } } });
+        addLog(`Reputation with ${name} (${category}) increased to ${newVal}.`);
+      }
+    } else if (parsed.type === 'loserep') {
+      const [category, name, amtStr] = parsed.args;
+      const amt = parseInt(amtStr, 10) || 1;
+      if (!category || !name) {
+        addLog('Usage: loserep <category> <name> <amount>');
+      } else {
+        const cat = stats.reputation[category] || {};
+        const newVal = (cat[name] || 0) - amt;
+        updateStats({ reputation: { [category]: { [name]: newVal } } });
+        addLog(`Reputation with ${name} (${category}) decreased to ${newVal}.`);
       }
     } else if (parsed.type === 'spend') {
       const amt = parseInt(parsed.arg, 10);
