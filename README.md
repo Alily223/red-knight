@@ -1,6 +1,13 @@
-# Getting Started with Create React App
+# Red Knight
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repository now separates the application into two directories:
+
+- **frontend** – the React application created with Create React App.
+- **backend** – a Node.js server using Express and SQLite.
+
+The frontend proxies API requests to the backend which listens on port `4000` by default.
+
+Below is the original Create React App documentation.
 
 ## Available Scripts
 

@@ -1,47 +1,53 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import Database from 'better-sqlite3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const DATA_FILE = path.join(__dirname, 'data.json');
+const dbPath = path.join(__dirname, 'database.db');
+const db = new Database(dbPath);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users(
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    email TEXT,
+    picture TEXT,
+    created TEXT
+  );
+  CREATE TABLE IF NOT EXISTS saves(
+    id TEXT PRIMARY KEY,
+    user TEXT,
+    stats TEXT
+  );
+  CREATE TABLE IF NOT EXISTS games(
+    id TEXT PRIMARY KEY,
+    state TEXT
+  );
+  CREATE TABLE IF NOT EXISTS recipes(
+    combo TEXT PRIMARY KEY,
+    item TEXT
+  );
+`);
 const aiCache = new Map();
 
 app.use(cors());
 app.use(express.json());
 
-function loadData() {
-  try {
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    return {
-      users: {},
-      saves: {},
-      games: {},
-      recipes: {},
-      ...data,
-    };
-  } catch {
-    return { users: {}, saves: {}, games: {}, recipes: {} };
-  }
-}
-
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
 
 app.post('/login', (req, res) => {
   const { id, name, email, picture } = req.body;
   if (!id) return res.status(400).json({ error: 'id required' });
-  const data = loadData();
-  if (!data.users[id]) {
-    data.users[id] = { id, name, email, picture, created: new Date().toISOString() };
-    saveData(data);
+  const existing = db.prepare('SELECT id FROM users WHERE id=?').get(id);
+  if (!existing) {
+    db.prepare(
+      'INSERT INTO users (id, name, email, picture, created) VALUES (?, ?, ?, ?, ?)'
+    ).run(id, name, email, picture, new Date().toISOString());
   }
   res.json({ ok: true });
 });
@@ -49,31 +55,39 @@ app.post('/login', (req, res) => {
 app.post('/save', (req, res) => {
   const { id, user, stats } = req.body;
   if (!id) return res.status(400).json({ error: 'id required' });
-  const data = loadData();
-  data.saves[id] = { user, stats };
-  saveData(data);
+  db.prepare(
+    'INSERT OR REPLACE INTO saves (id, user, stats) VALUES (?, ?, ?)'
+  ).run(id, JSON.stringify(user), JSON.stringify(stats));
   res.json({ ok: true });
 });
 
 app.post('/game/save', (req, res) => {
   const { id, state } = req.body;
   if (!id) return res.status(400).json({ error: 'id required' });
-  const data = loadData();
-  data.games[id] = state;
-  saveData(data);
+  db.prepare('INSERT OR REPLACE INTO games (id, state) VALUES (?, ?)').run(
+    id,
+    JSON.stringify(state)
+  );
   res.json({ ok: true });
 });
 
 app.get('/game/load/:id', (req, res) => {
   const { id } = req.params;
-  const data = loadData();
-  res.json(data.games[id] || {});
+  const row = db.prepare('SELECT state FROM games WHERE id=?').get(id);
+  res.json(row ? JSON.parse(row.state) : {});
 });
 
 app.get('/save/:id', (req, res) => {
   const id = req.params.id;
-  const data = loadData();
-  res.json(data.saves[id] || {});
+  const row = db.prepare('SELECT user, stats FROM saves WHERE id=?').get(id);
+  if (row) {
+    res.json({
+      user: JSON.parse(row.user || '{}'),
+      stats: JSON.parse(row.stats || '{}')
+    });
+  } else {
+    res.json({});
+  }
 });
 
 async function callAI(prompt) {
@@ -243,9 +257,9 @@ app.post('/craft', async (req, res) => {
     .map(r => `${r.name}:${r.amount || 1}`)
     .sort()
     .join(',');
-  const data = loadData();
-  if (data.recipes[combo]) {
-    return res.json(data.recipes[combo]);
+  const existing = db.prepare('SELECT item FROM recipes WHERE combo=?').get(combo);
+  if (existing) {
+    return res.json(JSON.parse(existing.item));
   }
   const names = resources.map(r => `${r.amount || 1} ${r.name}`).join(', ');
   const prompt =
@@ -261,19 +275,24 @@ app.post('/craft', async (req, res) => {
         description: match[2].trim(),
         weight: parseInt(match[3], 10) || 1
       };
-      data.recipes[combo] = item;
-      saveData(data);
+      db.prepare('INSERT OR REPLACE INTO recipes (combo, item) VALUES (?, ?)').run(
+        combo,
+        JSON.stringify(item)
+      );
       return res.json(item);
     }
     throw new Error('parse');
   } catch {
+    const count = db.prepare('SELECT COUNT(*) as c FROM recipes').get().c;
     const fallback = {
-      name: `Crafted Item ${Object.keys(data.recipes).length + 1}`,
+      name: `Crafted Item ${count + 1}`,
       description: 'An improvised creation.',
       weight: 1
     };
-    data.recipes[combo] = fallback;
-    saveData(data);
+    db.prepare('INSERT OR REPLACE INTO recipes (combo, item) VALUES (?, ?)').run(
+      combo,
+      JSON.stringify(fallback)
+    );
     res.json(fallback);
   }
 });
