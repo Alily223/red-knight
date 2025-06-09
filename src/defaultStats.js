@@ -55,6 +55,7 @@ export default {
   activeMount: '',
   activeVehicle: '',
   teleportScrolls: 0,
+  recipes: {},
   class: '',
   buffs: [],
   statusEffects: [],
