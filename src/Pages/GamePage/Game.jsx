@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, Button, Stack, Paper, Text } from '@mantine/core';
+import { TextInput, Button, Stack, Paper, Text, Flex } from '@mantine/core';
+import StatsCard from './StatsCard';
 import defaultStats from '../../defaultStats';
 
 const directions = {
@@ -297,22 +298,25 @@ const Game = () => {
   }
 
   return (
-    <Stack spacing="xs" p="md">
-      <Paper shadow="xs" p="md" style={{ height: '300px', overflowY: 'auto' }}>
-        {log.map((entry, idx) => (
-          <Text key={idx}>{entry}</Text>
-        ))}
-      </Paper>
-      <TextInput
-        placeholder="Enter command"
-        value={command}
-        onChange={(e) => setCommand(e.currentTarget.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleCommand();
-        }}
-      />
-      <Button onClick={handleCommand}>Submit</Button>
-    </Stack>
+    <Flex align="flex-start" gap="md" p="md">
+      <Stack spacing="xs" style={{ flexGrow: 1 }}>
+        <Paper shadow="xs" p="md" style={{ height: '300px', overflowY: 'auto' }}>
+          {log.map((entry, idx) => (
+            <Text key={idx}>{entry}</Text>
+          ))}
+        </Paper>
+        <TextInput
+          placeholder="Enter command"
+          value={command}
+          onChange={(e) => setCommand(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleCommand();
+          }}
+        />
+        <Button onClick={handleCommand}>Submit</Button>
+      </Stack>
+      <StatsCard stats={stats} />
+    </Flex>
   );
 };
 
