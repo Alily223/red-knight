@@ -506,6 +506,38 @@ const Game = () => {
           updateStats({ resources: newRes });
         })
         .catch(() => addLog('No new resources discovered.'));
+    } else if (parsed.type === 'craft') {
+      if (parsed.args.length === 0) {
+        addLog('Usage: craft <resource> [resource ...]');
+      } else {
+        const counts = {};
+        parsed.args.forEach(r => {
+          const n = r.toLowerCase();
+          counts[n] = (counts[n] || 0) + 1;
+        });
+        for (const [res, amt] of Object.entries(counts)) {
+          const have = (stats.resources[res] || 0) + (stats.resources.discovered?.[res] || 0);
+          if (have < amt) {
+            addLog(`Not enough ${res}.`);
+            return;
+          }
+        }
+        const payload = { resources: Object.entries(counts).map(([name, amount]) => ({ name, amount })) };
+        fetch('/craft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(item => {
+            const newRes = { ...stats.resources };
+            for (const [res, amt] of Object.entries(counts)) {
+              if (newRes[res] != null) newRes[res] -= amt;
+              else if (newRes.discovered && newRes.discovered[res] != null) newRes.discovered[res] -= amt;
+            }
+            const combo = Object.entries(counts).map(([n,a]) => `${n}:${a}`).sort().join(',');
+            const newRecipes = { ...(stats.recipes || {}), [combo]: item };
+            updateStats({ resources: newRes, items: [...stats.items, item], weight: stats.weight + (item.weight || 1), recipes: newRecipes });
+            addLog(`You craft ${item.name}! ${item.description}`);
+          })
+          .catch(() => addLog('Crafting failed.'));
+      }
     } else if (parsed.type === 'buff') {
       const [stat, valStr, durStr] = parsed.args;
       const value = parseInt(valStr, 10);

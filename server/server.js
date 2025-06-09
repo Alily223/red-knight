@@ -23,10 +23,11 @@ function loadData() {
       users: {},
       saves: {},
       games: {},
+      recipes: {},
       ...data,
     };
   } catch {
-    return { users: {}, saves: {}, games: {} };
+    return { users: {}, saves: {}, games: {}, recipes: {} };
   }
 }
 
@@ -230,6 +231,50 @@ app.post('/resource', async (req, res) => {
     const names = ['Mythril', 'Adamant', 'Soulstone', 'Starshard'];
     const name = names[Math.floor(Math.random() * names.length)];
     res.json({ name });
+  }
+});
+
+app.post('/craft', async (req, res) => {
+  const { resources } = req.body || {};
+  if (!resources || !Array.isArray(resources) || resources.length === 0) {
+    return res.status(400).json({ error: 'resources required' });
+  }
+  const combo = resources
+    .map(r => `${r.name}:${r.amount || 1}`)
+    .sort()
+    .join(',');
+  const data = loadData();
+  if (data.recipes[combo]) {
+    return res.json(data.recipes[combo]);
+  }
+  const names = resources.map(r => `${r.amount || 1} ${r.name}`).join(', ');
+  const prompt =
+    `Craft an item using these materials: ${names}. ` +
+    'Respond in the format "NAME: <name>; DESCRIPTION: <description>; WEIGHT: <number>".';
+  try {
+    const j = await callAI(prompt);
+    const text = j[0]?.generated_text || '';
+    const match = text.match(/NAME:\s*(.*);\s*DESCRIPTION:\s*([^;]+);\s*WEIGHT:\s*(\d+)/i);
+    if (match) {
+      const item = {
+        name: match[1].trim(),
+        description: match[2].trim(),
+        weight: parseInt(match[3], 10) || 1
+      };
+      data.recipes[combo] = item;
+      saveData(data);
+      return res.json(item);
+    }
+    throw new Error('parse');
+  } catch {
+    const fallback = {
+      name: `Crafted Item ${Object.keys(data.recipes).length + 1}`,
+      description: 'An improvised creation.',
+      weight: 1
+    };
+    data.recipes[combo] = fallback;
+    saveData(data);
+    res.json(fallback);
   }
 });
 

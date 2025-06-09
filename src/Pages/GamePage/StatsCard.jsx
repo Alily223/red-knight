@@ -82,6 +82,17 @@ const StatsCard = ({ stats }) => (
       </>
     )}
 
+    {stats.recipes && Object.keys(stats.recipes).length > 0 && (
+      <>
+        <Title order={4} mt="sm">Known Recipes</Title>
+        <List size="sm" withPadding>
+          {Object.entries(stats.recipes).map(([combo, item]) => (
+            <List.Item key={combo}>{item.name} ({combo})</List.Item>
+          ))}
+        </List>
+      </>
+    )}
+
     <Text size="sm" mt="sm">
       Carry Weight: {stats.weight || 0} / {10 + (stats.strength || 0) * 5}
       { (stats.weight || 0) > 10 + (stats.strength || 0) * 5 ? ' (Encumbered)' : '' }
