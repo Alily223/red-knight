@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Paper, Title, Text, List, Button, HoverCard, SimpleGrid } from '@mantine/core';
+import { months, formatHour } from '../../time';
 import { Carousel } from '@mantine/carousel';
 import { useNavigate } from 'react-router-dom';
 import defaultStats from '../../defaultStats';
@@ -184,6 +185,20 @@ const Stats = () => {
               );
             })}
           </Carousel>
+        </>
+      )}
+      {stats.worldTime && (
+        <>
+          <Title order={3} mt="sm">World Time</Title>
+          <List size="sm" withPadding>
+            <List.Item>Year: {stats.worldTime.year}</List.Item>
+            <List.Item>Month: {months[stats.worldTime.month]}</List.Item>
+            <List.Item>Day: {stats.worldTime.day}</List.Item>
+            <List.Item>Time: {formatHour(stats.worldTime.hour)}</List.Item>
+            <List.Item>
+              Survival Length: {Math.floor((stats.worldTime.survivalHours || 0)/24)} days { (stats.worldTime.survivalHours || 0)%24 } hours
+            </List.Item>
+          </List>
         </>
       )}
       <Button mt="md" onClick={handleSave}>Save Stats</Button>

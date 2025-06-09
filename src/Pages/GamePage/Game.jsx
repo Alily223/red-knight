@@ -3,6 +3,7 @@ import { TextInput, Button, Stack, Paper, Text, Flex } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import StatsCard from './StatsCard';
 import defaultStats from '../../defaultStats';
+import { months } from '../../time';
 
 const directions = {
   north: { x: 0, y: 1 },
@@ -171,6 +172,27 @@ const Game = () => {
     };
   }
 
+  function incrementGameTime(hours = 1) {
+    setStats((prev) => {
+      const wt = { ...prev.worldTime };
+      wt.survivalHours += hours;
+      wt.hour += hours;
+      while (wt.hour >= 24) {
+        wt.hour -= 24;
+        wt.day += 1;
+      }
+      while (wt.day > 30) {
+        wt.day -= 30;
+        wt.month += 1;
+      }
+      while (wt.month >= months.length) {
+        wt.month -= months.length;
+        wt.year += 1;
+      }
+      return { ...prev, worldTime: wt };
+    });
+  }
+
   function saveGame() {
     const state = getState();
     localStorage.setItem('gameSave', JSON.stringify(state));
@@ -220,6 +242,9 @@ const Game = () => {
 
   function updateStats(patch) {
     const newStats = { ...stats, ...patch };
+    if (patch.worldTime) {
+      newStats.worldTime = { ...stats.worldTime, ...patch.worldTime };
+    }
     setStats(newStats);
     localStorage.setItem('playerStats', JSON.stringify(newStats));
   }
@@ -370,6 +395,7 @@ const Game = () => {
       addLog('Unknown command.');
     }
 
+    incrementGameTime(1);
     inputRef.current?.focus();
   }
 

@@ -43,4 +43,11 @@ export default {
   places: [],
   people: [],
   class: '',
+  worldTime: {
+    year: 110,
+    month: 0,
+    day: 1,
+    hour: 0,
+    survivalHours: 0,
+  },
 };
