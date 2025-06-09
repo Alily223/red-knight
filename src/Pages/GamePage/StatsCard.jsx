@@ -1,6 +1,7 @@
 import React from 'react';
 import { Paper, Title, Text, List, SimpleGrid } from '@mantine/core';
 import { months, formatHour } from '../../time';
+import { tierName } from '../../techTiers';
 
 const STAT_INFO = {
   health: { label: 'Health' },
@@ -66,6 +67,7 @@ const StatsCard = ({ stats }) => (
         </Text>
       ))}
     </SimpleGrid>
+    <Text size="sm" mt="sm">Tech Tier: {tierName(stats.techTier)} ({stats.techTier})</Text>
 
     {stats.items && stats.items.length > 0 && (
       <>
@@ -162,6 +164,17 @@ const StatsCard = ({ stats }) => (
         <List size="sm" withPadding>
           {stats.places.map((pl, idx) => (
             <List.Item key={idx}>{pl}</List.Item>
+          ))}
+        </List>
+      </>
+    )}
+
+    {stats.civilizations && Object.keys(stats.civilizations).length > 0 && (
+      <>
+        <Title order={4} mt="sm">Civilizations</Title>
+        <List size="sm" withPadding>
+          {Object.entries(stats.civilizations).map(([name, civ]) => (
+            <List.Item key={name}>{name}: {tierName(civ.techTier)} ({civ.techTier})</List.Item>
           ))}
         </List>
       </>

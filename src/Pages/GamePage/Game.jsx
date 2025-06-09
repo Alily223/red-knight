@@ -4,6 +4,7 @@ import { useMediaQuery } from '@mantine/hooks';
 import StatsCard from './StatsCard';
 import defaultStats from '../../defaultStats';
 import { months } from '../../time';
+import { tierName } from '../../techTiers';
 
 const directions = {
   north: { x: 0, y: 1 },
@@ -55,6 +56,14 @@ function generateLocation(x, y) {
   const name = `${adjectives[seed % adjectives.length]} ${nouns[seed % nouns.length]}`;
   const description = `You arrive at the ${name.toLowerCase()}.`;
   return { name, description };
+}
+
+function generateCivilizationName(seed) {
+  const prefixes = ['Neo', 'Grand', 'Old', 'New', 'Iron', 'Solar', 'Steel'];
+  const suffixes = ['Empire', 'Kingdom', 'Clan', 'Tribe', 'Republic', 'Federation'];
+  const p = prefixes[Math.abs(seed) % prefixes.length];
+  const s = suffixes[Math.abs(seed * 7) % suffixes.length];
+  return `${p} ${s}`;
 }
 
 
@@ -150,6 +159,19 @@ const Game = () => {
           encounters[key] = { type: 'enemy', name: foe };
           setEncounters({ ...encounters });
           addLog(`A wild ${foe} appears! Type 'fight' to engage.`);
+        } else if (Math.random() < 0.1) {
+          const seed = position.x * 17 + position.y * 13;
+          const civName = generateCivilizationName(seed);
+          encounters[key] = { type: 'civ', name: civName };
+          setEncounters({ ...encounters });
+          if (!stats.civilizations[civName]) {
+            const tier = Math.floor(Math.random() * 5) + 1;
+            updateStats({ civilizations: { ...stats.civilizations, [civName]: { techTier: tier } } });
+            addLog(`You discover the ${civName} (Tech Tier ${tierName(tier)}).`);
+          } else {
+            const tier = stats.civilizations[civName].techTier;
+            addLog(`You enter the land of the ${civName} (Tech Tier ${tierName(tier)}).`);
+          }
         } else {
           encounters[key] = null;
           setEncounters({ ...encounters });
@@ -322,6 +344,9 @@ const Game = () => {
         guilds: { ...(stats.reputation?.guilds || {}), ...(patch.reputation.guilds || {}) },
         nations: { ...(stats.reputation?.nations || {}), ...(patch.reputation.nations || {}) },
       };
+    }
+    if (patch.civilizations) {
+      newStats.civilizations = { ...(stats.civilizations || {}), ...patch.civilizations };
     }
     setStats(newStats);
     localStorage.setItem('playerStats', JSON.stringify(newStats));
@@ -617,6 +642,16 @@ const Game = () => {
       } else {
         updateStats({ coins: stats.coins - amt });
         addLog(`You spend ${amt} coins.`);
+      }
+    } else if (parsed.type === 'techtier') {
+      addLog(`Your technology tier is ${tierName(stats.techTier)} (${stats.techTier}).`);
+    } else if (parsed.type === 'advancetech') {
+      const cost = stats.techTier * 100;
+      if (stats.xp >= cost) {
+        updateStats({ techTier: stats.techTier + 1, xp: stats.xp - cost });
+        addLog(`You advance to ${tierName(stats.techTier + 1)}!`);
+      } else {
+        addLog(`You need ${cost} XP to advance technology.`);
       }
     } else if (parsed.type === 'ai') {
       const prompt = parsed.arg;
