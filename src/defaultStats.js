@@ -37,6 +37,11 @@ export default {
     gorgonite: 0,
     discovered: {},
   },
+  reputation: {
+    factions: {},
+    guilds: {},
+    nations: {},
+  },
   items: [],
   skills: [],
   abilities: [],
