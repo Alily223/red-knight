@@ -196,7 +196,8 @@ app.post('/item', async (req, res) => {
     const text = j[0]?.generated_text || '';
     const match = text.match(/NAME:\s*(.*);\s*DESCRIPTION:\s*([^\n]+)/i);
     if (match) {
-      return res.json({ name: match[1].trim(), description: match[2].trim() });
+      const weight = Math.floor(Math.random() * 5) + 1;
+      return res.json({ name: match[1].trim(), description: match[2].trim(), weight });
     }
     throw new Error('parse');
   } catch {
@@ -208,7 +209,8 @@ app.post('/item', async (req, res) => {
       'A coin gleaming with ancient markings.',
     ];
     const i = Math.floor(Math.random() * names.length);
-    res.json({ name: names[i], description: descs[i] });
+    const weight = Math.floor(Math.random() * 5) + 1;
+    res.json({ name: names[i], description: descs[i], weight });
   }
 });
 

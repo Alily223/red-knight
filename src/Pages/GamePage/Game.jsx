@@ -26,6 +26,8 @@ const baseResources = [
   'gorgonite',
 ];
 
+const CARRY_PER_STRENGTH = 5;
+
 function parseCommand(input) {
   const trimmed = input.trim().toLowerCase();
   if (!trimmed) return null;
@@ -172,6 +174,10 @@ const Game = () => {
     };
   }
 
+  function getMaxWeight() {
+    return 10 + (stats.strength || 0) * CARRY_PER_STRENGTH;
+  }
+
   function incrementGameTime(hours = 1) {
     setStats((prev) => {
       const wt = { ...prev.worldTime };
@@ -292,8 +298,12 @@ const Game = () => {
       fetch('/item', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((item) => {
-          addLog(`You found ${item.name}! ${item.description}`);
-          updateStats({ items: [...stats.items, item.name] });
+          const newWeight = stats.weight + (item.weight || 1);
+          addLog(`You found ${item.name}! ${item.description} (Weight ${item.weight || 1})`);
+          updateStats({ items: [...stats.items, item], weight: newWeight });
+          if (newWeight > getMaxWeight()) {
+            addLog('You are encumbered by the weight of your items.');
+          }
           const coins = Math.floor(Math.random() * 3);
           if (coins > 0) {
             updateStats({ coins: stats.coins + coins });
@@ -301,6 +311,23 @@ const Game = () => {
           }
         })
         .catch(() => addLog('You search but find nothing.'));
+    } else if (parsed.type === 'drop') {
+      const name = parsed.arg;
+      const idx = stats.items.findIndex((it) => {
+        const itemName = typeof it === 'string' ? it : it.name;
+        return itemName.toLowerCase() === name.toLowerCase();
+      });
+      if (idx >= 0) {
+        const item = stats.items[idx];
+        const weight = typeof item === 'object' ? (item.weight || 1) : 0;
+        const newItems = [...stats.items];
+        newItems.splice(idx, 1);
+        const newWeight = Math.max(0, stats.weight - weight);
+        updateStats({ items: newItems, weight: newWeight });
+        addLog(`You drop the ${typeof item === 'string' ? item : item.name}.`);
+      } else {
+        addLog('You do not have that item.');
+      }
     } else if (parsed.type === 'gather') {
       const res = baseResources[Math.floor(Math.random() * baseResources.length)];
       const rare = res === 'gorgonite';

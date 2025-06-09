@@ -135,10 +135,16 @@ const Stats = () => {
       </SimpleGrid>
       <Title order={3} mt="sm">Items</Title>
       <List size="sm" withPadding>
-        {stats.items.map((it, idx) => (
-          <List.Item key={idx}>{it}</List.Item>
-        ))}
+        {stats.items.map((it, idx) => {
+          const itemName = typeof it === 'string' ? it : it.name;
+          const w = typeof it === 'object' ? it.weight || 1 : 0;
+          return <List.Item key={idx}>{itemName} (w{w})</List.Item>;
+        })}
       </List>
+      <Text size="sm" mt="sm">
+        Carry Weight: {stats.weight || 0} / {10 + (stats.strength || 0) * 5}
+        { (stats.weight || 0) > 10 + (stats.strength || 0) * 5 ? ' (Encumbered)' : '' }
+      </Text>
       <Title order={3} mt="sm">Resources</Title>
       <List size="sm" withPadding>
         {Object.entries(stats.resources).map(([res, amt]) => (
