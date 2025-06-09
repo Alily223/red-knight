@@ -22,6 +22,7 @@ export default {
   xp: 0,
   perkPoints: 0,
   coins: 0,
+  weight: 0,
   resources: {
     wood: 0,
     stone: 0,
