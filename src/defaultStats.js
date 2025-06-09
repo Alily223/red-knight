@@ -44,6 +44,8 @@ export default {
   places: [],
   people: [],
   class: '',
+  buffs: [],
+  statusEffects: [],
   worldTime: {
     year: 110,
     month: 0,
