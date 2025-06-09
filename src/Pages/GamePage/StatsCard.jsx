@@ -85,6 +85,38 @@ const StatsCard = ({ stats }) => (
       { (stats.weight || 0) > 10 + (stats.strength || 0) * 5 ? ' (Encumbered)' : '' }
     </Text>
 
+    {stats.mounts && stats.mounts.length > 0 && (
+      <>
+        <Title order={4} mt="sm">Mounts</Title>
+        <List size="sm" withPadding>
+          {stats.mounts.map((m, idx) => (
+            <List.Item key={idx}>{m}</List.Item>
+          ))}
+        </List>
+        {stats.activeMount && (
+          <Text size="sm">Riding: {stats.activeMount}</Text>
+        )}
+      </>
+    )}
+
+    {stats.vehicles && stats.vehicles.length > 0 && (
+      <>
+        <Title order={4} mt="sm">Vehicles</Title>
+        <List size="sm" withPadding>
+          {stats.vehicles.map((v, idx) => (
+            <List.Item key={idx}>{v}</List.Item>
+          ))}
+        </List>
+        {stats.activeVehicle && (
+          <Text size="sm">In Vehicle: {stats.activeVehicle}</Text>
+        )}
+      </>
+    )}
+
+    {stats.teleportScrolls > 0 && (
+      <Text size="sm" mt="sm">Teleport Scrolls: {stats.teleportScrolls}</Text>
+    )}
+
     <Title order={4} mt="sm">Resources</Title>
     <List size="sm" withPadding>
       {Object.entries(stats.resources || {}).map(([res, amt]) => (
