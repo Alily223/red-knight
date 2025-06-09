@@ -74,6 +74,22 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
+    const abilityName = localStorage.getItem('nextAbility');
+    if (abilityName) {
+      localStorage.removeItem('nextAbility');
+      const ability = (stats.abilities || []).find((a) => {
+        if (typeof a === 'string') return a.toLowerCase() === abilityName.toLowerCase();
+        return a.name.toLowerCase() === abilityName.toLowerCase();
+      });
+      if (ability) {
+        const desc = typeof ability === 'string' ? '' : ability.description || '';
+        addLog(`You use ${typeof ability === 'string' ? ability : ability.name}! ${desc}`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats]);
+
+  useEffect(() => {
     const key = `${position.x},${position.y}`;
     const run = async () => {
       if (!places[key]) {
@@ -217,19 +233,40 @@ const Game = () => {
         })
           .then((r) => (r.ok ? r.json() : Promise.reject()))
           .then((d) => {
-            const ability = d[0]?.generated_text?.split('\n')[0] || 'Mysterious Power';
-            const newRes = { ...stats.resources, gorgonite: stats.resources.gorgonite - 1 };
-            updateStats({ resources: newRes, abilities: [...stats.abilities, ability] });
-            addLog(`The Gorgonite grants you the ability: ${ability}.`);
+            const abilityName = d[0]?.generated_text?.split('\n')[0] || 'Mysterious Power';
+            return fetch('/ai', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: `Describe the ability "${abilityName}" in one short sentence.` })
+            })
+              .then((r2) => (r2.ok ? r2.json() : Promise.reject()))
+              .then((d2) => {
+                const desc = d2[0]?.generated_text?.split('\n')[0] || '';
+                const newRes = { ...stats.resources, gorgonite: stats.resources.gorgonite - 1 };
+                updateStats({ resources: newRes, abilities: [...stats.abilities, { name: abilityName, description: desc }] });
+                addLog(`The Gorgonite grants you the ability: ${abilityName}.`);
+              });
           })
           .catch(() => {
-            const ability = `Mystic Power ${Date.now()}`;
+            const ability = { name: `Mystic Power ${Date.now()}`, description: '' };
             const newRes = { ...stats.resources, gorgonite: stats.resources.gorgonite - 1 };
             updateStats({ resources: newRes, abilities: [...stats.abilities, ability] });
-            addLog(`The Gorgonite grants you a mysterious power: ${ability}.`);
+            addLog(`The Gorgonite grants you a mysterious power: ${ability.name}.`);
           });
       } else {
         addLog('You have no Gorgonite.');
+      }
+    } else if (cmd.startsWith('ability ')) {
+      const name = cmd.slice(8).trim();
+      const ab = (stats.abilities || []).find((a) => {
+        if (typeof a === 'string') return a.toLowerCase() === name;
+        return a.name.toLowerCase() === name;
+      });
+      if (ab) {
+        const desc = typeof ab === 'string' ? '' : ab.description || '';
+        addLog(`You use ${typeof ab === 'string' ? ab : ab.name}! ${desc}`);
+      } else {
+        addLog('You do not possess that ability.');
       }
     } else if (cmd.startsWith('spend ')) {
       const amt = parseInt(cmd.slice(6), 10);
