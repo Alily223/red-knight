@@ -29,20 +29,21 @@ const baseResources = [
 const CARRY_PER_STRENGTH = 5;
 
 function parseCommand(input) {
-  const trimmed = input.trim().toLowerCase();
+  const trimmed = input.trim();
   if (!trimmed) return null;
   const parts = trimmed.split(/\s+/);
-  const verb = parts[0];
-  const arg = parts.slice(1).join(' ');
+  const verb = parts[0].toLowerCase();
+  const args = parts.slice(1);
+  const arg = args.join(' ');
 
   if (directions[verb]) {
-    return { type: 'move', dir: verb };
+    return { type: 'move', dir: verb, args, arg };
   }
-  if ((verb === 'go' || verb === 'move' || verb === 'walk') && directions[arg]) {
-    return { type: 'move', dir: arg };
+  if ((verb === 'go' || verb === 'move' || verb === 'walk') && directions[args[0]]) {
+    return { type: 'move', dir: args[0], args: args.slice(1), arg: args.slice(1).join(' ') };
   }
 
-  return { type: verb, arg };
+  return { type: verb, args, arg };
 }
 
 function generateLocation(x, y) {
@@ -178,6 +179,36 @@ const Game = () => {
     return 10 + (stats.strength || 0) * CARRY_PER_STRENGTH;
   }
 
+  function applyBuffEffect({ name, stat, value, duration, stackable = true }) {
+    setStats(prev => {
+      const buffs = [...(prev.buffs || [])];
+      const idx = buffs.findIndex(b => b.name === name);
+      let delta = 0;
+      if (idx >= 0) {
+        const b = { ...buffs[idx] };
+        if (b.stackable) {
+          b.stacks += 1;
+          b.duration = Math.max(b.duration, duration);
+          b.value = b.valuePerStack * b.stacks;
+          delta = value;
+        } else {
+          b.duration = Math.max(b.duration, duration);
+        }
+        buffs[idx] = b;
+      } else {
+        buffs.push({ name, stat, valuePerStack: value, value, duration, stacks: 1, stackable });
+        delta = value;
+      }
+      const newStats = { ...prev, buffs };
+      if (stat && delta !== 0) newStats[stat] = (newStats[stat] || 0) + delta;
+      return newStats;
+    });
+  }
+
+  function addStatusEffect(effect) {
+    setStats(prev => ({ ...prev, statusEffects: [...(prev.statusEffects || []), effect] }));
+  }
+
   function incrementGameTime(hours = 1) {
     setStats((prev) => {
       const wt = { ...prev.worldTime };
@@ -195,7 +226,37 @@ const Game = () => {
         wt.month -= months.length;
         wt.year += 1;
       }
-      return { ...prev, worldTime: wt };
+
+      const newStats = { ...prev, worldTime: wt };
+
+      if (prev.buffs) {
+        const updated = [];
+        for (const b of prev.buffs) {
+          const dur = b.duration - hours;
+          if (dur > 0) {
+            updated.push({ ...b, duration: dur });
+          } else if (b.stat) {
+            newStats[b.stat] = (newStats[b.stat] || 0) - b.value;
+          }
+        }
+        newStats.buffs = updated;
+      }
+
+      if (prev.statusEffects) {
+        const updatedS = [];
+        for (const s of prev.statusEffects) {
+          const dur = s.duration - hours;
+          if (s.name === 'poison') {
+            newStats.health = Math.max(0, (newStats.health || 0) - (s.damage || 0) * hours);
+          }
+          if (dur > 0) {
+            updatedS.push({ ...s, duration: dur });
+          }
+        }
+        newStats.statusEffects = updatedS;
+      }
+
+      return newStats;
     });
   }
 
@@ -351,6 +412,50 @@ const Game = () => {
           updateStats({ resources: newRes });
         })
         .catch(() => addLog('No new resources discovered.'));
+    } else if (parsed.type === 'buff') {
+      const [stat, valStr, durStr] = parsed.args;
+      const value = parseInt(valStr, 10);
+      const duration = parseInt(durStr, 10) || 1;
+      if (!stat || isNaN(value)) {
+        addLog('Usage: buff <stat> <value> <duration>');
+      } else {
+        applyBuffEffect({ name: `${stat}-buff`, stat, value, duration });
+        addLog(`Buff applied to ${stat} (+${value}) for ${duration}h.`);
+      }
+    } else if (parsed.type === 'debuff') {
+      const [stat, valStr, durStr] = parsed.args;
+      const value = parseInt(valStr, 10);
+      const duration = parseInt(durStr, 10) || 1;
+      if (!stat || isNaN(value)) {
+        addLog('Usage: debuff <stat> <value> <duration>');
+      } else {
+        applyBuffEffect({ name: `${stat}-debuff`, stat, value: -value, duration });
+        addLog(`Debuff applied to ${stat} (-${value}) for ${duration}h.`);
+      }
+    } else if (parsed.type === 'poison') {
+      const [dmgStr, durStr] = parsed.args;
+      const damage = parseInt(dmgStr, 10);
+      const duration = parseInt(durStr, 10) || 1;
+      if (isNaN(damage)) {
+        addLog('Usage: poison <damage> <duration>');
+      } else {
+        addStatusEffect({ name: 'poison', damage, duration });
+        addLog(`You are poisoned for ${duration}h.`);
+      }
+    } else if (parsed.type === 'status') {
+      if (stats.buffs && stats.buffs.length > 0) {
+        stats.buffs.forEach((b) => addLog(`${b.name} on ${b.stat} x${b.stacks} (${b.duration}h)`));
+      } else {
+        addLog('No active buffs.');
+      }
+      if (stats.statusEffects && stats.statusEffects.length > 0) {
+        stats.statusEffects.forEach((s) => {
+          if (s.name === 'poison') addLog(`Poison ${s.damage}/h (${s.duration}h)`);
+          else addLog(`${s.name} (${s.duration}h)`);
+        });
+      } else {
+        addLog('No status effects.');
+      }
     } else if (parsed.type === 'use' && parsed.arg === 'gorgonite') {
       if (stats.resources.gorgonite > 0) {
         fetch('/ai', {

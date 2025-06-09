@@ -131,6 +131,28 @@ const StatsCard = ({ stats }) => (
       </>
     )}
 
+    {stats.buffs && stats.buffs.length > 0 && (
+      <>
+        <Title order={4} mt="sm">Buffs</Title>
+        <List size="sm" withPadding>
+          {stats.buffs.map((b, idx) => (
+            <List.Item key={idx}>{b.name} x{b.stacks} ({b.duration}h)</List.Item>
+          ))}
+        </List>
+      </>
+    )}
+
+    {stats.statusEffects && stats.statusEffects.length > 0 && (
+      <>
+        <Title order={4} mt="sm">Status Effects</Title>
+        <List size="sm" withPadding>
+          {stats.statusEffects.map((s, idx) => (
+            <List.Item key={idx}>{s.name} ({s.duration}h)</List.Item>
+          ))}
+        </List>
+      </>
+    )}
+
     {stats.worldTime && (
       <>
         <Title order={4} mt="sm">World Time</Title>
