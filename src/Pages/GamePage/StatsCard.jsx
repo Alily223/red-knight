@@ -1,5 +1,5 @@
 import React from 'react';
-import { Paper, Title, Text, List } from '@mantine/core';
+import { Paper, Title, Text, List, SimpleGrid } from '@mantine/core';
 
 const STAT_INFO = {
   health: { label: 'Health' },
@@ -58,11 +58,13 @@ const orderedStats = [
 const StatsCard = ({ stats }) => (
   <Paper p="sm" shadow="xs" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
     <Title order={3}>Player Stats</Title>
-    {orderedStats.map((key) => (
-      <Text key={key} size="sm">
-        {STAT_INFO[key].label}: {stats[key] || (key === 'class' ? 'None' : 0)}
-      </Text>
-    ))}
+    <SimpleGrid cols={2} spacing="xs">
+      {orderedStats.map((key) => (
+        <Text key={key} size="sm">
+          {STAT_INFO[key].label}: {stats[key] || (key === 'class' ? 'None' : 0)}
+        </Text>
+      ))}
+    </SimpleGrid>
 
     {stats.items && stats.items.length > 0 && (
       <>
