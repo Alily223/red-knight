@@ -1,5 +1,6 @@
 import React from 'react';
 import { Paper, Title, Text, List, SimpleGrid } from '@mantine/core';
+import { months, formatHour } from '../../time';
 
 const STAT_INFO = {
   health: { label: 'Health' },
@@ -119,6 +120,21 @@ const StatsCard = ({ stats }) => (
             const ability = typeof ab === 'string' ? { name: ab } : ab;
             return <List.Item key={idx}>{ability.name}</List.Item>;
           })}
+        </List>
+      </>
+    )}
+
+    {stats.worldTime && (
+      <>
+        <Title order={4} mt="sm">World Time</Title>
+        <List size="sm" withPadding>
+          <List.Item>Year: {stats.worldTime.year}</List.Item>
+          <List.Item>Month: {months[stats.worldTime.month]}</List.Item>
+          <List.Item>Day: {stats.worldTime.day}</List.Item>
+          <List.Item>Time: {formatHour(stats.worldTime.hour)}</List.Item>
+          <List.Item>
+            Survival Length: {Math.floor((stats.worldTime.survivalHours || 0)/24)} days { (stats.worldTime.survivalHours || 0)%24 } hours
+          </List.Item>
         </List>
       </>
     )}
