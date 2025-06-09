@@ -118,7 +118,7 @@ const Stats = () => {
   return (
     <Paper p="md" m="md" shadow="xs">
       <Title order={2}>Player Stats</Title>
-      <SimpleGrid cols={2} spacing="xs">
+      <SimpleGrid cols={2} spacing="xs" breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
         {orderedStats.map((key) => (
           <HoverCard key={key} width={260} shadow="md" withinPortal>
             <HoverCard.Target>

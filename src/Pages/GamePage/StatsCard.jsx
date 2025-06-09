@@ -58,7 +58,7 @@ const orderedStats = [
 const StatsCard = ({ stats }) => (
   <Paper p="sm" shadow="xs" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
     <Title order={3}>Player Stats</Title>
-    <SimpleGrid cols={2} spacing="xs">
+    <SimpleGrid cols={2} spacing="xs" breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
       {orderedStats.map((key) => (
         <Text key={key} size="sm">
           {STAT_INFO[key].label}: {stats[key] || (key === 'class' ? 'None' : 0)}
